@@ -29,7 +29,8 @@ from numpy import *
 import profile
 import pstats
 import os
-import timeimport getopt
+import time
+import getopt
 import csv
 import sys
 
@@ -67,9 +68,9 @@ def lambOseen(gamma, nu, z, t):
 # function that computes the Lamb Oseen Velocity
 def lambOseenVel(gamma, nu, z, t):
     centerLambOseen = 0j
-    r = abs(z - centerLambOseen)
+    r = abs(z - centerLambOseen) + EPS
     nr2 = - r**2
-    c0 = gamma / (2. * math.pi * (r**2 + EPS))
+    c0 = gamma / (2. * math.pi * r**2)
     c1 = nr2 / (4. * nu * t)
     vel = c0 * (1. - exp (c1))
     vel = (-z.imag + z.real * 1j) * vel
@@ -106,17 +107,43 @@ def main():
     t = tini                                # time for the first step
     time_antiDiff = sigma2 / (2. * nu)      # Time "anti-diffusion" correction
     noise = 1. * h                         # noise value is X times the lattice step
-        ## parse command line options------------------------------------    try:        opts, args = getopt.getopt(sys.argv[1:], 'sghp:l:u:v:n:d:i:', ['help', 'saveGraph', 'level:'])    except getopt.error, msg:        print msg        print "for help use --help"        sys.exit(2)    # process options    for o, a in opts:
-        # process help option        if o in ('-h', '--help'):            print __doc__            sys.exit(0)
-        # process truncation parameter        if o in ('-p'):            p_param = int(a)
-        # process level parameter        if o in ('-l', '--level'):            level_param = int(a)
-        # process FMM h1 shift parameter        if o in ('-u'):            h1_param = int(a)
-        # process FMM h2 parameter        if o in ('-v'):            h2_param = int(a)
-        # process simulation size parameter        if o in ('-n'):            simulation_size = int(a)
+    
+    ## parse command line options------------------------------------
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], 'sghp:l:u:v:n:d:i:', ['help', 'saveGraph', 'level:'])
+    except getopt.error, msg:
+        print msg
+        print "for help use --help"
+        sys.exit(2)
+    # process options
+    for o, a in opts:
+        # process help option
+        if o in ('-h', '--help'):
+            print __doc__
+            sys.exit(0)
+        # process truncation parameter
+        if o in ('-p'):
+            p_param = int(a)
+        # process level parameter
+        if o in ('-l', '--level'):
+            level_param = int(a)
+        # process FMM h1 shift parameter
+        if o in ('-u'):
+            h1_param = int(a)
+        # process FMM h2 parameter
+        if o in ('-v'):
+            h2_param = int(a)
+        # process simulation size parameter
+        if o in ('-n'):
+            simulation_size = int(a)
             if (simulation_size < len(SIM_DOMAIN_SIZE)):
                 s_grid = SIM_DOMAIN_SIZE[simulation_size]
-        # process particle distribution parameter        if o in ('-d'):            particle_distribution = int(a)
-        # process vorticity distribution parameter        if o in ('-i'):            vorticity_distribution = int(a)
+        # process particle distribution parameter
+        if o in ('-d'):
+            particle_distribution = int(a)
+        # process vorticity distribution parameter
+        if o in ('-i'):
+            vorticity_distribution = int(a)
     
     ## Initialization -----------------------------------------------
     # create the grid that contains the coordinates x,y
@@ -230,5 +257,6 @@ def main():
                 POINTS_DIST_SCATTER, [z.real, z.imag, errorRel])               # Data from error
         
 
-# Run Main functionif __name__ == "__main__":
+# Run Main function
+if __name__ == "__main__":
     main()
