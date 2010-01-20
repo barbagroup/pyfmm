@@ -98,47 +98,23 @@ def findNeighbors(n, l):
     # # Deinterleaving the number
     n1, n2 = bitDeinterleaving(n, l)
     
-    # # Shift
-    n1_m = n1 - 1
-    n1_p = n1 + 1
-    n2_m = n2 - 1
-    n2_p = n2 + 1
-    
     # # Interleaving
     # create sets of neighbors, taking care of the border of the boxes
-    setN1 = [n1]
-    if n1 != 0: setN1.extend([n1_m])
-    if n1 != 2**l - 1: setN1.extend([n1_p])
-    setN2 = [n2]
-    if n2 != 0: setN2.extend([n2_m])
-    if n2 != 2**l - 1: setN2.extend([n2_p])
-    
     # Creation of neighbors list combining the sets
     neighborSet = []
-    for x in setN1:
-        for y in setN2:
-            if x != n1 or y != n2:
-                neighborSet.extend([bitInterleaving(x, y)])
-        
+    for x in range(max(n1 - 1, 0), min(n1 + 1, 2**l - 1) + 1):
+        for y in range(max(n2 - 1, 0), min(n2 + 1, 2**l - 1) + 1):
+            if not (x == n1 and y == n2):
+                neighborSet.append(bitInterleaving(x, y))
+
     return neighborSet
     
 def findParentsChildren(n, l):
     '''
     Find the node s interaction list
     '''
-    interactionList = []
-    
-    # find the parent's neighbors
-    parent = findFather(n)
-    parentNeighbors = findNeighbors(parent, l - 1)
-    
-    # add the children of the parent's neighbors to the interaction list
-    for pN in parentNeighbors:
-        # get the childrens
-        childrens = findChilds(pN)
-        interactionList.extend(childrens)
-    
-    return interactionList
+    import operator
+    return reduce(operator.add, [findChilds(pN) for pN in findNeighbors(findFather(n), l-1)])
     
 ############################################################
 ## Enable the use of objects as nodes of a quadtree
@@ -178,6 +154,14 @@ class QuadtreeNode:
         self.blobVelUpdate = array([], complex)
         self.blobCirculation = array([], float)
         self.blobNumber = array([])
+
+    def __str__(self):
+        s = 'num '+str(self.number)+'\n'
+        s += 'center '+str(self.centerX)+','+str(self.centerY)+'\n'
+        s += 'blob pos '+str(self.blobZ)+'\n'
+        s += 'blob circ '+str(self.blobCirculation)+'\n'
+        s += 'blob vel '+str(self.blobVel)
+        return s
     
     def addBlob(self, z, vel, circulation, blobNum):
         '''Add information of a blob to the Quadtree'''
@@ -209,16 +193,18 @@ class Quadtree:
         self.level = levelArg
         self.levels = [[],[]]
         # Create levels starting at level 2
-        li = range(2,levelArg + 1)
+        li = range(2, levelArg + 1)
         for levelNum in li:
             # Create the new nodes for the level levelNum
-            nodes = []
-            liN = range(0, 4**levelNum)
-            for nodeNum in liN:
-                nodes.extend([QuadtreeNode(nodeNum, levelNum)])
             # Add the new nodes to the level levelNum
-            self.levels.extend([nodes])
-    
+            self.levels.append([QuadtreeNode(nodeNum, levelNum) for nodeNum in range(0, 4**levelNum)])
+
+    def __str__(self):
+        s = 'level '+str(self.level)+'\n'
+        for box in self.levels[-1]:
+            s += str(box)+'\n'
+        return s
+
     def findNode(self, point, level):
         '''
         Find the number of the box at level \level\ where point \point\ belongs.
@@ -263,6 +249,8 @@ class Quadtree:
             num1 = toBin(xP, self.level)
             num2 = toBin(yP, self.level)
             numInterleaved = bitInterleaving(num1, num2)
+            #print 'x',xP,'y',yP,num1,num2
+            #print 'blob',i,'box',numInterleaved
             # Add the blob to the Quadtree-node
             associatedNode = self.levels[self.level][numInterleaved]
             associatedNode.addBlob(arrZ[i], arrVel[i], arrCirculation[i], i)

@@ -101,6 +101,7 @@ def main():
     dt = 0.02                               # time step of the simulation
     steps = int((tend - tini) / dt)         # number of simulation steps
     s_grid = SIM_DOMAIN_SIZE[simulation_size]   # the side of the grid
+    print "TADA:::: ", s_grid/2
     ## Variables calculations
     h = overlap * sigma                     # spacing of the particles
     sigma2 = sigma**2
@@ -171,7 +172,7 @@ def main():
     print 'FMM Started'
     # Calculate  velocity FMM
     fmmTime = time.clock()
-    circulation, z, vel = FMMevalVelocity(level_param, p_param, circulation, z, vel, sigma2, k)
+    circulation, z, tree, vel = FMMevalVelocity(level_param, p_param, circulation, z, vel, sigma2, k)
     fmmTime = time.clock() - fmmTime
     print 'FMM Finished'
     

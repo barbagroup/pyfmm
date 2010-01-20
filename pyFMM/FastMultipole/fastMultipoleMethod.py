@@ -39,7 +39,6 @@ def upwardStep1(quadtree, p, k):
             C = C + constant * dot(nodeB.blobCirculation[i], mec)
         # Save the Multipole Expansion coefficients of the nodeB
         nodeB.C = C.copy()
-        
     return
     
     
@@ -112,7 +111,6 @@ def downwardStep1(quadtree, p):
                 D = D + dot(m2l, inter.C)
             # Save the Multipole Expansion coefficients of the nodeB
             nodeB.D = D
-            
     return
 
 
@@ -146,6 +144,26 @@ def downwardStep2(quadtree, p):
                 # add the parent s contribution and nodeB s contributions to the total
                 nodeB.E = nodeB.D + dot(l2l, parent.E)
     return
+
+
+def evalVelocity2(circulation, Z, sigma2, k):
+    # local variables
+    size = len(Z)
+    velocity = zeros((size), complex)
+    # computation of common factors
+    c1 = -1/(k * sigma2)
+    c2 = 1j/(k * math.pi)
+    for i in range(size):
+        r2 = abs(Z - Z[i])**2
+        r2[i] = 2**(-40)
+        zz = (Z - Z[i]).conj()
+        zz[i] = 1       # fix the division by zero problem
+        # Calculates the velocity induced by the blob i of the center box
+        blobInfluence = circulation[i] * c2 * (1 - exp(r2  * c1)) / zz
+        blobInfluence[i] = 0    # blob self influence = 0
+        # Calcules the velocity
+        velocity = velocity + blobInfluence
+    return velocity
 
 
 
@@ -267,15 +285,17 @@ def FMMevalVelocity(level_param, p_param, circulation, z, vel, sigma2, k):
     tree = Quadtree(level_param)
     # Filling the quadtree
     tree.fillQuadtree(z, vel, circulation)
+    ##print tree
+    ######## TEST ########
+    #tree.empty([0])
+    ######## END TEST ########
     # Start the FMM procedure
     upwardStep1(tree, p_param, k)
     upwardStep2(tree, p_param)
     downwardStep1(tree, p_param)
     downwardStep2(tree, p_param)
     finalStep(tree, p_param, sigma2, k)
-    
-    # Order data and return results from FMM
-    # Obtain information from quadtree structure
+    # Reconstruct the arrays
     out_number = []
     out_z = []
     out_vel = []
@@ -293,7 +313,6 @@ def FMMevalVelocity(level_param, p_param, circulation, z, vel, sigma2, k):
     out_circulation = out_matrix[:,1]
     out_z = out_matrix[:,2]
     out_vel = out_matrix[:,3]
-    
-    return out_circulation.real, out_z, out_vel
+    return out_circulation.real, out_z, tree, out_vel
 
     
